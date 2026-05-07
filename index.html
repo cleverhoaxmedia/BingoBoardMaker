@@ -365,9 +365,9 @@
         for (let side = 0; side < 2; side++) {
           const card   = generateCard();
           const canvas = drawCard(card, images);
-          const data   = canvas.toDataURL('image/png');
+          const data   = canvas.toDataURL('image/jpeg', 0.88);
           const x      = side === 0 ? MARGIN_MM : MARGIN_MM + GRID_W_MM + GUTTER_MM;
-          doc.addImage(data, 'PNG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
+          doc.addImage(data, 'JPEG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
         }
 
         // Yield to the UI thread every 5 pages so the browser stays responsive
