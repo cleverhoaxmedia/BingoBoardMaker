@@ -32,10 +32,7 @@
       padding: 48px 20px 80px;
     }
 
-    .container {
-      width: 100%;
-      max-width: 520px;
-    }
+    .container { width: 100%; max-width: 520px; }
 
     header { margin-bottom: 44px; }
 
@@ -46,7 +43,6 @@
       color: #fff;
       line-height: 1;
     }
-
     .tool-name span { color: var(--accent); }
 
     .tool-sub {
@@ -72,7 +68,7 @@
       margin-bottom: 20px;
     }
 
-    .field { margin-bottom: 20px; }
+    .field { margin-bottom: 24px; }
     .field:last-child { margin-bottom: 0; }
 
     label {
@@ -100,12 +96,78 @@
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
     input[type="number"]:focus { border-color: var(--accent); }
 
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 0;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 0;
+      cursor: pointer;
+    }
+    input[type="range"]:hover::-webkit-slider-thumb { background: #f0d060; }
+
+    .slider-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: var(--accent);
+      min-width: 24px;
+      text-align: right;
+      line-height: 1;
+    }
+
     .field-note {
       font-size: 10px;
       color: var(--text-dim);
       margin-top: 6px;
       font-style: italic;
     }
+
+    .total-display {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .total-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .total-right { display: flex; align-items: baseline; gap: 8px; }
+    .total-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #fff;
+      line-height: 1;
+    }
+    .total-sub { font-size: 10px; color: var(--text-dim); }
 
     .btn-generate {
       width: 100%;
@@ -129,7 +191,6 @@
       cursor: not-allowed;
     }
 
-    /* Progress */
     .progress-card { display: none; }
     .progress-card.visible { display: block; }
 
@@ -139,25 +200,19 @@
       gap: 10px;
       margin-bottom: 16px;
     }
-
     .chunk-counter {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 40px;
       color: var(--accent);
       line-height: 1;
     }
-
-    .chunk-label {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
+    .chunk-label { font-size: 11px; color: var(--text-dim); }
 
     .progress-track {
       background: var(--bg);
       height: 3px;
       margin-bottom: 14px;
     }
-
     .progress-fill {
       background: var(--accent);
       height: 100%;
@@ -165,14 +220,9 @@
       transition: width 0.35s ease;
     }
 
-    .status-text {
-      font-size: 11px;
-      color: var(--text-dim);
-      min-height: 16px;
-    }
+    .status-text { font-size: 11px; color: var(--text-dim); min-height: 16px; }
     .status-text.done { color: var(--success); }
 
-    /* Downloads */
     .downloads-card { display: none; }
     .downloads-card.visible { display: block; }
 
@@ -186,11 +236,7 @@
     }
     .download-item:last-child { border-bottom: none; }
 
-    .download-name {
-      font-size: 11px;
-      color: var(--text-dim);
-      word-break: break-all;
-    }
+    .download-name { font-size: 11px; color: var(--text-dim); word-break: break-all; }
 
     .download-btn {
       flex-shrink: 0;
@@ -218,15 +264,29 @@
 
     <div class="card">
       <div class="section-label">Settings</div>
+
       <div class="field">
-        <label>Total Pages</label>
-        <input type="number" id="totalPages" value="100" min="1" max="2000">
+        <label>Pages Per Batch</label>
+        <div class="slider-row">
+          <input type="range" id="pagesPerBatch" min="1" max="10" value="10" oninput="updateTotal()">
+          <div class="slider-value" id="pagesPerBatchVal">10</div>
+        </div>
         <div class="field-note">2 unique cards per page</div>
       </div>
+
       <div class="field">
-        <label>Pages Per File</label>
-        <input type="number" id="chunkSize" value="25" min="1" max="500">
-        <div class="field-note">Output splits into multiple downloads at this size</div>
+        <label>Number of Batches</label>
+        <input type="number" id="numBatches" value="10" min="1" max="500" oninput="updateTotal()">
+      </div>
+
+      <div class="field">
+        <div class="total-display">
+          <span class="total-label">Total</span>
+          <div class="total-right">
+            <span class="total-value" id="totalDisplay">100</span>
+            <span class="total-sub" id="totalCardsSub">pages / 200 cards</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -238,7 +298,7 @@
       <div class="section-label">Progress</div>
       <div class="chunk-readout">
         <div class="chunk-counter" id="chunkCounter">0/0</div>
-        <div class="chunk-label" id="chunkLabel">files complete</div>
+        <div class="chunk-label" id="chunkLabel">batches complete</div>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="progressFill"></div>
@@ -254,72 +314,70 @@
   </div>
 
   <script>
-    // === CONFIG ===
     const TOTAL_SOURCE_IMAGES = 54;
     const GRID_COLS = 4;
     const GRID_ROWS = 4;
+    const SRC_W     = 737;
+    const SRC_H     = 1131;
 
-    // Source image aspect ratio
-    const SRC_W = 737;
-    const SRC_H = 1131;
+    // Reduced canvas size for file efficiency (~56% fewer pixels vs previous)
+    const CELL_W    = 150;
+    const CELL_H    = Math.round(CELL_W * SRC_H / SRC_W); // ~230px
+    const CANVAS_W  = CELL_W * GRID_COLS;                  // 600px
+    const CANVAS_H  = CELL_H * GRID_ROWS;                  // ~920px
 
-    // Canvas cell size (scaled down for memory efficiency)
-    const CELL_W = 200;
-    const CELL_H = Math.round(CELL_W * SRC_H / SRC_W); // ~307px
-    const CANVAS_W = CELL_W * GRID_COLS;                // 800px
-    const CANVAS_H = CELL_H * GRID_ROWS;                // ~1228px
-
-    // PDF layout — Letter landscape in mm
-    const PAGE_W_MM  = 279.4;
-    const PAGE_H_MM  = 215.9;
-    const MARGIN_MM  = 12.7;  // 0.5in
-    const GUTTER_MM  = 12.7;  // 0.5in
-    const GRID_W_MM  = (PAGE_W_MM - 2 * MARGIN_MM - GUTTER_MM) / 2;          // ~120.65
-    const GRID_H_MM  = GRID_W_MM * (CANVAS_H / CANVAS_W);                    // ~185mm
-    const GRID_Y_MM  = MARGIN_MM + (PAGE_H_MM - 2 * MARGIN_MM - GRID_H_MM) / 2;
+    const PAGE_W_MM = 279.4;
+    const PAGE_H_MM = 215.9;
+    const MARGIN_MM = 12.7;
+    const GUTTER_MM = 12.7;
+    const GRID_W_MM = (PAGE_W_MM - 2 * MARGIN_MM - GUTTER_MM) / 2;
+    const GRID_H_MM = GRID_W_MM * (CANVAS_H / CANVAS_W);
+    const GRID_Y_MM = MARGIN_MM + (PAGE_H_MM - 2 * MARGIN_MM - GRID_H_MM) / 2;
 
     const BORDER_PX = 2;
+    const JPEG_Q    = 0.88;
 
     let loadedImages = null;
+
+    // ─── Live Total ────────────────────────────────────────────────────────────
+
+    function updateTotal() {
+      const ppb   = parseInt(document.getElementById('pagesPerBatch').value) || 0;
+      const nb    = parseInt(document.getElementById('numBatches').value)    || 0;
+      const total = ppb * nb;
+      document.getElementById('pagesPerBatchVal').textContent = ppb;
+      document.getElementById('totalDisplay').textContent     = total;
+      document.getElementById('totalCardsSub').textContent    = `pages / ${total * 2} cards`;
+    }
 
     // ─── Image Loading ─────────────────────────────────────────────────────────
 
     function loadAllImages() {
       return new Promise((resolve, reject) => {
         const images = [];
-        let settled = 0;
-        let failed  = 0;
+        let settled = 0, failed = 0;
 
         for (let i = 1; i <= TOTAL_SOURCE_IMAGES; i++) {
           const img = new Image();
-
           img.onload = () => {
             settled++;
-            if (settled === TOTAL_SOURCE_IMAGES) {
-              failed > 0
-                ? reject(new Error(`${failed} image(s) failed to load. Check that images/img1.png … img${TOTAL_SOURCE_IMAGES}.png exist in the repo.`))
-                : resolve(images);
-            }
-          };
-
-          img.onerror = () => {
-            failed++;
-            settled++;
-            setStatus(`⚠ Could not load img${i}.png`);
             if (settled === TOTAL_SOURCE_IMAGES)
-              reject(new Error(`${failed} image(s) failed to load.`));
+              failed > 0 ? reject(new Error(`${failed} image(s) failed to load.`)) : resolve(images);
           };
-
+          img.onerror = () => {
+            failed++; settled++;
+            setStatus(`⚠ Could not load img${i}.png`);
+            if (settled === TOTAL_SOURCE_IMAGES) reject(new Error(`${failed} image(s) failed to load.`));
+          };
           img.src = `png/img${i}.png`;
           images.push(img);
         }
       });
     }
 
-    // ─── Card Generation ───────────────────────────────────────────────────────
+    // ─── Card Logic ────────────────────────────────────────────────────────────
 
     function generateCard() {
-      // Fisher-Yates shuffle on 0-based indices, take first 16
       const pool = Array.from({ length: TOTAL_SOURCE_IMAGES }, (_, i) => i);
       for (let i = pool.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -342,9 +400,7 @@
         const row = Math.floor(i / GRID_COLS);
         const x   = col * CELL_W;
         const y   = row * CELL_H;
-
         ctx.drawImage(images[cardIndices[i]], x, y, CELL_W, CELL_H);
-
         ctx.strokeStyle = '#000000';
         ctx.lineWidth   = BORDER_PX;
         ctx.strokeRect(x + BORDER_PX / 2, y + BORDER_PX / 2, CELL_W - BORDER_PX, CELL_H - BORDER_PX);
@@ -365,12 +421,11 @@
         for (let side = 0; side < 2; side++) {
           const card   = generateCard();
           const canvas = drawCard(card, images);
-          const data   = canvas.toDataURL('image/jpeg', 0.88);
+          const data   = canvas.toDataURL('image/jpeg', JPEG_Q);
           const x      = side === 0 ? MARGIN_MM : MARGIN_MM + GRID_W_MM + GUTTER_MM;
           doc.addImage(data, 'JPEG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
         }
 
-        // Yield to the UI thread every 5 pages so the browser stays responsive
         if (p % 5 === 4) await sleep(0);
       }
 
@@ -383,12 +438,8 @@
 
     function dateStamp() {
       const d = new Date();
-      return d.getFullYear() +
-        String(d.getMonth() + 1).padStart(2, '0') +
-        String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
     }
-
-    // ─── UI Helpers ────────────────────────────────────────────────────────────
 
     function setStatus(msg, done = false) {
       const el = document.getElementById('statusText');
@@ -396,9 +447,7 @@
       el.className = 'status-text' + (done ? ' done' : '');
     }
 
-    function setProgress(pct) {
-      document.getElementById('progressFill').style.width = pct + '%';
-    }
+    function setProgress(pct) { document.getElementById('progressFill').style.width = pct + '%'; }
 
     function setChunkCounter(done, total) {
       document.getElementById('chunkCounter').textContent = `${done}/${total}`;
@@ -408,10 +457,7 @@
       const list = document.getElementById('downloadsList');
       const row  = document.createElement('div');
       row.className = 'download-item';
-      row.innerHTML = `
-        <span class="download-name">${filename}</span>
-        <button class="download-btn" id="dl-${index}">↓ Save</button>
-      `;
+      row.innerHTML = `<span class="download-name">${filename}</span><button class="download-btn" id="dl-${index}">↓ Save</button>`;
       list.appendChild(row);
       document.getElementById('downloadsCard').classList.add('visible');
       document.getElementById(`dl-${index}`).addEventListener('click', () => doc.save(filename));
@@ -420,25 +466,22 @@
     // ─── Entry Point ───────────────────────────────────────────────────────────
 
     async function startGeneration() {
-      const totalPages = parseInt(document.getElementById('totalPages').value);
-      const chunkSize  = parseInt(document.getElementById('chunkSize').value);
+      const pagesPerBatch = parseInt(document.getElementById('pagesPerBatch').value);
+      const numBatches    = parseInt(document.getElementById('numBatches').value);
 
-      if (!totalPages || totalPages < 1 || !chunkSize || chunkSize < 1) {
-        alert('Please enter valid values for both fields.');
+      if (!pagesPerBatch || !numBatches || numBatches < 1) {
+        alert('Please enter valid values.');
         return;
       }
 
       const btn = document.getElementById('generateBtn');
       btn.disabled = true;
-
       document.getElementById('progressCard').classList.add('visible');
       document.getElementById('downloadsList').innerHTML = '';
       document.getElementById('downloadsCard').classList.remove('visible');
 
-      const numChunks = Math.ceil(totalPages / chunkSize);
-      setChunkCounter(0, numChunks);
-      document.getElementById('chunkLabel').textContent =
-        `file${numChunks !== 1 ? 's' : ''} complete`;
+      setChunkCounter(0, numBatches);
+      document.getElementById('chunkLabel').textContent = `batch${numBatches !== 1 ? 'es' : ''} complete`;
       setProgress(0);
 
       try {
@@ -449,27 +492,26 @@
 
         const date = dateStamp();
 
-        for (let i = 0; i < numChunks; i++) {
-          const pagesThisChunk = Math.min(chunkSize, totalPages - i * chunkSize);
-          const suffix   = numChunks > 1 ? `_${i + 1}of${numChunks}` : '';
+        for (let i = 0; i < numBatches; i++) {
+          const suffix   = numBatches > 1 ? `_${i + 1}of${numBatches}` : '';
           const filename = `BINGO_${date}${suffix}.pdf`;
 
-          setStatus(`Building file ${i + 1} of ${numChunks}… (${pagesThisChunk} pages)`);
+          setStatus(`Building batch ${i + 1} of ${numBatches}… (${pagesPerBatch} pages)`);
 
-          const doc = await generateChunk(pagesThisChunk, loadedImages);
+          const doc = await generateChunk(pagesPerBatch, loadedImages);
           addDownloadRow(doc, filename, i);
-          setChunkCounter(i + 1, numChunks);
-          setProgress(((i + 1) / numChunks) * 100);
+          setChunkCounter(i + 1, numBatches);
+          setProgress(((i + 1) / numBatches) * 100);
 
           await sleep(60);
         }
 
-        setStatus(`✓ ${numChunks} file${numChunks !== 1 ? 's' : ''} ready to download.`, true);
+        setStatus(`✓ ${numBatches} batch${numBatches !== 1 ? 'es' : ''} ready to download.`, true);
 
       } catch (err) {
         setStatus(`Error: ${err.message}`);
         console.error(err);
-        loadedImages = null; // reset so user can retry after fixing images
+        loadedImages = null;
       } finally {
         btn.disabled = false;
       }
