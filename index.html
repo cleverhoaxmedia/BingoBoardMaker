@@ -297,7 +297,8 @@
       user-select: none;
       transition: border-color 0.15s;
     }
-    .queue-item:hover { border-color: var(--border2); }
+    .queue-item:hover { border-color: var(--border2); cursor: pointer; }
+    .queue-item:hover .q-icon::after { content: ' ↓'; font-size: 10px; }
     .sortable-ghost { opacity: 0.2; }
     .sortable-chosen { border-color: var(--accent) !important; }
 
@@ -644,8 +645,8 @@ function setPrintMode(mode) {
       const cardsPerPage = layoutMode === 'portrait' ? 4 : 2;
       const sheets = printMode === 'double' ? Math.ceil(tot / 2) : tot;
       const batches = Math.ceil(tot / MAX_BATCH);
-      document.getElementById('totalDisplay').textContent     = tot;
-      document.getElementById('totalCardsSub').textContent    = `pages / ${tot * cardsPerPage} cards / ${sheets} sheets`;
+      document.getElementById('totalDisplay').textContent     = sheets;
+      document.getElementById('totalCardsSub').textContent    = `sheets`;
       document.getElementById('cardsPerPageHint').textContent = `${cardsPerPage} unique cards per page · ${batches} batch${batches !== 1 ? 'es' : ''}`;
     }
 
@@ -708,9 +709,10 @@ function setPrintMode(mode) {
         // 2*card_h + 3G = PH  →  G = (PH - PW*aspect) / (3*(1 - aspect))
         const PW = 215.9, PH = 279.4;
         const aspect = CANVAS_H / CANVAS_W;
-        const G  = (PH - PW * aspect) / (3 * (1 - aspect));
-        const gw = (PW - 3 * G) / 2;
-        const gh = gw * aspect;
+        const G  = 10; // gutter/margin in mm — tune this
+        const gh = (PH - 3 * G) / 2;   // height-constrained
+        const gw = gh / aspect;
+        const x0 = (PW - 2 * gw - G) / 2; // center horizontally
 
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
         for (let p = 0; p < pageCount; p++) {
@@ -720,8 +722,8 @@ function setPrintMode(mode) {
               const card   = generateCard();
               const canvas = drawCard(card, images);
               const data   = canvas.toDataURL('image/jpeg', JPEG_Q);
-              const x = G + col * (gw + G);
-              const y = G + row * (gh + G);
+              const x = x0 + col * (gw + G);
+              const y = G  + row * (gh + G);
               doc.addImage(data, 'JPEG', x, y, gw, gh);
             }
           }
@@ -903,6 +905,17 @@ function setPrintMode(mode) {
         });
       });
 
+      list.querySelectorAll('.queue-item').forEach((item, i) => {
+        item.addEventListener('click', () => {
+          const entry = queue[i];
+          const blob  = new Blob([entry.bytes], { type: 'application/pdf' });
+          const url   = URL.createObjectURL(blob);
+          const a     = document.createElement('a');
+          a.href = url; a.download = entry.name; a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        });
+      });
+
       initSortable();
     }
 
@@ -1009,16 +1022,4 @@ function setPrintMode(mode) {
       if (pdfs.length) addUploadedPDFs(pdfs);
     });
     extraInput.addEventListener('change', () => {
-      const pdfs = [...extraInput.files].filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-      if (pdfs.length) addUploadedPDFs(pdfs);
-      extraInput.value = '';
-    });
-
-    /* ─────────────────────────────────────────────────────────
-       INIT
-    ───────────────────────────────────────────────────────── */
-    updateTotal();
-    renderQueue();
-  </script>
-</body>
-</html>
+      const pdfs = [...extraInput.f
