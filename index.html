@@ -498,17 +498,23 @@
           </div>
 
           <div class="field">
-            <label>Pages Per Batch</label>
-            <div class="slider-row">
-              <input type="range" id="pagesPerBatch" min="1" max="10" value="10" oninput="updateTotal()">
-              <div class="slider-value" id="pagesPerBatchVal">10</div>
+            <label>Print Mode</label>
+            <div class="layout-toggle">
+              <button class="layout-opt active" id="opt-single" onclick="setPrintMode('single')">
+                <div class="lo-label">Single-Sided</div>
+                <div class="lo-sub">1 page = 1 sheet</div>
+              </button>
+              <button class="layout-opt" id="opt-double" onclick="setPrintMode('double')">
+                <div class="lo-label">Double-Sided</div>
+                <div class="lo-sub">2 pages = 1 sheet</div>
+              </button>
             </div>
-            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;font-style:italic" id="cardsPerPageHint">2 unique cards per page</div>
           </div>
 
           <div class="field">
-            <label>Number of Batches</label>
-            <input type="number" id="numBatches" value="10" min="1" max="500" oninput="updateTotal()">
+            <label>Total Pages</label>
+            <input type="number" id="totalPages" value="10" min="1" max="5000" oninput="updateTotal()">
+            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;font-style:italic" id="cardsPerPageHint">2 unique cards per page</div>
           </div>
 
           <div class="field">
@@ -605,6 +611,7 @@
     let queue = [];          // { name, bytes (Uint8Array), source:'generated'|'uploaded', pageCount }
     let generating = false;
     let layoutMode = 'landscape';
+    let printMode  = 'single';
 
     /* ─────────────────────────────────────────────────────────
        PHASE TOGGLE
@@ -616,6 +623,13 @@
     /* ─────────────────────────────────────────────────────────
        PHASE 1 — GENERATION
     ───────────────────────────────────────────────────────── */
+function setPrintMode(mode) {
+      printMode = mode;
+      document.getElementById('opt-single').classList.toggle('active', mode === 'single');
+      document.getElementById('opt-double').classList.toggle('active', mode === 'double');
+      updateTotal();
+    }
+
     function setLayout(mode) {
       layoutMode = mode;
       document.getElementById('opt-landscape').classList.toggle('active', mode === 'landscape');
@@ -623,15 +637,16 @@
       updateTotal();
     }
 
+    const MAX_BATCH = 10;
+
     function updateTotal() {
-      const ppb = parseInt(document.getElementById('pagesPerBatch').value) || 0;
-      const nb  = parseInt(document.getElementById('numBatches').value)    || 0;
-      const tot = ppb * nb;
+      const tot = parseInt(document.getElementById('totalPages').value) || 0;
       const cardsPerPage = layoutMode === 'portrait' ? 4 : 2;
-      document.getElementById('pagesPerBatchVal').textContent  = ppb;
-      document.getElementById('totalDisplay').textContent      = tot;
-      document.getElementById('totalCardsSub').textContent     = `pages / ${tot * cardsPerPage} cards`;
-      document.getElementById('cardsPerPageHint').textContent  = `${cardsPerPage} unique cards per page`;
+      const sheets = printMode === 'double' ? Math.ceil(tot / 2) : tot;
+      const batches = Math.ceil(tot / MAX_BATCH);
+      document.getElementById('totalDisplay').textContent     = tot;
+      document.getElementById('totalCardsSub').textContent    = `pages / ${tot * cardsPerPage} cards / ${sheets} sheets`;
+      document.getElementById('cardsPerPageHint').textContent = `${cardsPerPage} unique cards per page · ${batches} batch${batches !== 1 ? 'es' : ''}`;
     }
 
     function loadAllImages() {
@@ -747,9 +762,10 @@
     function setProgress(pct) { document.getElementById('progressFill').style.width = pct + '%'; }
 
     async function startGeneration() {
-      const pagesPerBatch = parseInt(document.getElementById('pagesPerBatch').value);
-      const numBatches    = parseInt(document.getElementById('numBatches').value);
-      if (!pagesPerBatch || !numBatches || numBatches < 1) { alert('Please enter valid values.'); return; }
+      const totalPages = parseInt(document.getElementById('totalPages').value);
+      if (!totalPages || totalPages < 1) { alert('Please enter a valid page count.'); return; }
+
+      const numBatches = Math.ceil(totalPages / MAX_BATCH);
 
       const btn = document.getElementById('generateBtn');
       btn.disabled = true;
@@ -775,14 +791,15 @@
         const batchBytes = [];
 
         for (let i = 0; i < numBatches; i++) {
+          const pagesThisBatch = (i === numBatches - 1) ? totalPages - i * MAX_BATCH : MAX_BATCH;
           const suffix   = numBatches > 1 ? `_${i + 1}of${numBatches}` : '';
           const filename = `BINGO_${date}${suffix}.pdf`;
-          setGenStatus(`Building batch ${i + 1} of ${numBatches}… (${pagesPerBatch} pages)`);
+          setGenStatus(`Building batch ${i + 1} of ${numBatches}… (${pagesThisBatch} pages)`);
 
-          const doc   = await generateChunk(pagesPerBatch, loadedImages, layoutMode);
+          const doc   = await generateChunk(pagesThisBatch, loadedImages, layoutMode);
           const bytes = doc.output('arraybuffer');
           const cardsPerPage = layoutMode === 'portrait' ? 4 : 2;
-          batchBytes.push({ name: filename, bytes: new Uint8Array(bytes), pageCount: pagesPerBatch * cardsPerPage });
+          batchBytes.push({ name: filename, bytes: new Uint8Array(bytes), pageCount: pagesThisBatch * cardsPerPage });
 
           document.getElementById('chunkCounter').textContent = `${i + 1}/${numBatches}`;
           setProgress(((i + 1) / numBatches) * 100);
@@ -854,7 +871,8 @@
       }
 
       emptyMsg.style.display = 'none';
-      stitchBtn.disabled = queue.length < 2;
+      stitchBtn.disabled = queue.length < 1;
+      stitchBtn.textContent = queue.length === 1 ? 'DOWNLOAD' : 'STITCH ALL';
 
       const totalPages = queue.reduce((s, e) => s + (e.pageCount || 0), 0);
       badge.textContent = `${queue.length} file${queue.length !== 1 ? 's' : ''} · ${totalPages}pp`;
@@ -933,36 +951,47 @@
     }
 
     async function doStitch() {
-      if (queue.length < 2) return;
+      if (queue.length < 1) return;
       const btn = document.getElementById('stitchBtn');
       btn.disabled = true;
-      showStitchStatus('loading', '<span class="spinner"></span>Merging PDFs…');
+
+      const isSingle = queue.length === 1;
+      showStitchStatus('loading', `<span class="spinner"></span>${isSingle ? 'Preparing download…' : 'Merging PDFs…'}`);
 
       try {
-        const merged = await PDFLib.PDFDocument.create();
-        for (const entry of queue) {
-          const src   = await PDFLib.PDFDocument.load(entry.bytes);
-          const pages = await merged.copyPages(src, src.getPageIndices());
-          pages.forEach(p => merged.addPage(p));
+        let bytes;
+        let filename;
+
+        if (isSingle) {
+          bytes    = queue[0].bytes;
+          filename = queue[0].name;
+        } else {
+          const merged = await PDFLib.PDFDocument.create();
+          for (const entry of queue) {
+            const src   = await PDFLib.PDFDocument.load(entry.bytes);
+            const pages = await merged.copyPages(src, src.getPageIndices());
+            pages.forEach(p => merged.addPage(p));
+          }
+          bytes    = await merged.save();
+          filename = `BINGO_MERGED_${dateStamp()}.pdf`;
         }
 
-        const bytes    = await merged.save();
-        const blob     = new Blob([bytes], { type: 'application/pdf' });
-        const url      = URL.createObjectURL(blob);
-        const a        = document.createElement('a');
-        const filename = `BINGO_MERGED_${dateStamp()}.pdf`;
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
         a.href = url; a.download = filename; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
 
         const totalPages = queue.reduce((s, e) => s + (e.pageCount || 0), 0);
         showStitchStatus('success',
-          `✓ Merged ${queue.length} PDFs (${totalPages} pages) — saved as <strong style="color:var(--text);font-weight:500">${filename}</strong>`
+          `✓ ${isSingle ? 'Downloaded' : `Merged ${queue.length} PDFs`} (${totalPages} pages) — saved as <strong style="color:var(--text);font-weight:500">${filename}</strong>`
         );
       } catch (err) {
         showStitchStatus('error', `✗ Error: ${err.message}`);
       }
 
-      btn.disabled = queue.length < 2;
+      btn.disabled = queue.length < 1;
+      btn.textContent = queue.length === 1 ? 'DOWNLOAD' : 'STITCH ALL';
     }
 
     /* ─────────────────────────────────────────────────────────
