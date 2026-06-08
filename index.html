@@ -638,11 +638,11 @@
       return new Promise((resolve, reject) => {
         const images = [];
         let settled = 0, failed = 0;
-        for (let i = 1; i <= TOTAL_SOURCE_IMAGES; i++) {
+        for (let i = 0; i < TOTAL_SOURCE_IMAGES; i++) {
           const img = new Image();
-          img.onload = () => { settled++; if (settled === TOTAL_SOURCE_IMAGES) failed ? reject(new Error(`${failed} image(s) failed`)) : resolve(images); };
-          img.onerror = () => { failed++; settled++; setGenStatus(`⚠ Could not load img${i}.png`); if (settled === TOTAL_SOURCE_IMAGES) reject(new Error(`${failed} image(s) failed`)); };
-          img.src = `tiff/img${i}.tif`;
+          img.onload  = () => { settled++; if (settled === TOTAL_SOURCE_IMAGES) failed ? reject(new Error(`${failed} image(s) failed`)) : resolve(images); };
+          img.onerror = () => { failed++; settled++; setGenStatus(`⚠ Could not load image ${i + 1}`); if (settled === TOTAL_SOURCE_IMAGES) reject(new Error(`${failed} image(s) failed`)); };
+          img.src = `png/img${i + 1}.png`;
           images.push(img);
         }
       });
