@@ -596,7 +596,7 @@
     const GRID_W_MM = (PAGE_W_MM - 2 * MARGIN_MM - GUTTER_MM) / 2;
     const GRID_H_MM = GRID_W_MM * (CANVAS_H / CANVAS_W);
     const GRID_Y_MM = MARGIN_MM + (PAGE_H_MM - 2 * MARGIN_MM - GRID_H_MM) / 2;
-    const BORDER_PX = 2;
+    const BORDER_PX = 2, JPEG_Q = 0.92;
 
     /* ─────────────────────────────────────────────────────────
        STATE
@@ -704,10 +704,10 @@
             for (let col = 0; col < 2; col++) {
               const card   = generateCard();
               const canvas = drawCard(card, images);
-              const data   = canvas.toDataURL('image/png');
+              const data   = canvas.toDataURL('image/jpeg', JPEG_Q);
               const x = G + col * (gw + G);
               const y = G + row * (gh + G);
-              doc.addImage(data, 'PNG', x, y, gw, gh);
+              doc.addImage(data, 'JPEG', x, y, gw, gh);
             }
           }
           if (p % 5 === 4) await sleep(0);
@@ -721,9 +721,9 @@
           for (let side = 0; side < 2; side++) {
             const card   = generateCard();
             const canvas = drawCard(card, images);
-            const data   = canvas.toDataURL('image/png');
+            const data   = canvas.toDataURL('image/jpeg', JPEG_Q);
             const x      = side === 0 ? MARGIN_MM : MARGIN_MM + GRID_W_MM + GUTTER_MM;
-            doc.addImage(data, 'PNG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
+            doc.addImage(data, 'JPEG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
           }
           if (p % 5 === 4) await sleep(0);
         }
