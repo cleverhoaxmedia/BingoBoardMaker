@@ -389,6 +389,52 @@
     .stitch-status.success { display: block; background: rgba(90,184,122,0.04); border-color: rgba(90,184,122,0.25); color: var(--success); }
     .stitch-status.error   { display: block; background: rgba(224,85,85,0.05); border-color: rgba(224,85,85,0.3); color: #f08080; }
 
+    /* ─── Layout toggle ──────────────────────────────── */
+    .layout-toggle { display: flex; gap: 0; }
+
+    .layout-opt {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      padding: 12px 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .layout-opt + .layout-opt { border-left: none; }
+    .layout-opt:hover { background: var(--surface2); border-color: var(--border2); }
+
+    .layout-opt.active {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(232,197,71,0.04);
+    }
+    .layout-opt.active + .layout-opt { border-left: 1px solid var(--border); }
+
+    .lo-diagram {
+      display: flex;
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+    .lo-diagram.portrait { flex-direction: column; gap: 2px; }
+    .lo-diagram.portrait .lo-row { display: flex; gap: 3px; }
+
+    .lo-card {
+      background: var(--border2);
+      border: 1px solid var(--text-dim);
+      opacity: 0.5;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+    .layout-opt.active .lo-card { background: var(--accent-dim); border-color: var(--accent); opacity: 1; }
+
+    .lo-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .lo-sub   { font-size: 9px;  color: var(--text-dim); letter-spacing: 0.06em; }
+
     .spinner {
       display: inline-block;
       width: 10px; height: 10px;
@@ -424,12 +470,40 @@
           <div class="section-label">Settings</div>
 
           <div class="field">
+            <label>Layout</label>
+            <div class="layout-toggle">
+              <button class="layout-opt active" id="opt-landscape" onclick="setLayout('landscape')">
+                <div class="lo-diagram">
+                  <div class="lo-card" style="width:42px;height:28px"></div>
+                  <div class="lo-card" style="width:42px;height:28px"></div>
+                </div>
+                <div class="lo-label">2-Up Landscape</div>
+                <div class="lo-sub">2 cards · letter wide</div>
+              </button>
+              <button class="layout-opt" id="opt-portrait" onclick="setLayout('portrait')">
+                <div class="lo-diagram portrait">
+                  <div class="lo-row">
+                    <div class="lo-card" style="width:26px;height:20px"></div>
+                    <div class="lo-card" style="width:26px;height:20px"></div>
+                  </div>
+                  <div class="lo-row">
+                    <div class="lo-card" style="width:26px;height:20px"></div>
+                    <div class="lo-card" style="width:26px;height:20px"></div>
+                  </div>
+                </div>
+                <div class="lo-label">4-Up Portrait</div>
+                <div class="lo-sub">4 cards · letter tall</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
             <label>Pages Per Batch</label>
             <div class="slider-row">
               <input type="range" id="pagesPerBatch" min="1" max="10" value="10" oninput="updateTotal()">
               <div class="slider-value" id="pagesPerBatchVal">10</div>
             </div>
-            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;font-style:italic">2 unique cards per page</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;font-style:italic" id="cardsPerPageHint">2 unique cards per page</div>
           </div>
 
           <div class="field">
@@ -522,7 +596,7 @@
     const GRID_W_MM = (PAGE_W_MM - 2 * MARGIN_MM - GUTTER_MM) / 2;
     const GRID_H_MM = GRID_W_MM * (CANVAS_H / CANVAS_W);
     const GRID_Y_MM = MARGIN_MM + (PAGE_H_MM - 2 * MARGIN_MM - GRID_H_MM) / 2;
-    const BORDER_PX = 2, JPEG_Q = 0.88;
+    const BORDER_PX = 2;
 
     /* ─────────────────────────────────────────────────────────
        STATE
@@ -530,6 +604,7 @@
     let loadedImages = null;
     let queue = [];          // { name, bytes (Uint8Array), source:'generated'|'uploaded', pageCount }
     let generating = false;
+    let layoutMode = 'landscape';
 
     /* ─────────────────────────────────────────────────────────
        PHASE TOGGLE
@@ -541,13 +616,22 @@
     /* ─────────────────────────────────────────────────────────
        PHASE 1 — GENERATION
     ───────────────────────────────────────────────────────── */
+    function setLayout(mode) {
+      layoutMode = mode;
+      document.getElementById('opt-landscape').classList.toggle('active', mode === 'landscape');
+      document.getElementById('opt-portrait').classList.toggle('active',  mode === 'portrait');
+      updateTotal();
+    }
+
     function updateTotal() {
       const ppb = parseInt(document.getElementById('pagesPerBatch').value) || 0;
       const nb  = parseInt(document.getElementById('numBatches').value)    || 0;
       const tot = ppb * nb;
-      document.getElementById('pagesPerBatchVal').textContent = ppb;
-      document.getElementById('totalDisplay').textContent     = tot;
-      document.getElementById('totalCardsSub').textContent    = `pages / ${tot * 2} cards`;
+      const cardsPerPage = layoutMode === 'portrait' ? 4 : 2;
+      document.getElementById('pagesPerBatchVal').textContent  = ppb;
+      document.getElementById('totalDisplay').textContent      = tot;
+      document.getElementById('totalCardsSub').textContent     = `pages / ${tot * cardsPerPage} cards`;
+      document.getElementById('cardsPerPageHint').textContent  = `${cardsPerPage} unique cards per page`;
     }
 
     function loadAllImages() {
@@ -558,7 +642,7 @@
           const img = new Image();
           img.onload = () => { settled++; if (settled === TOTAL_SOURCE_IMAGES) failed ? reject(new Error(`${failed} image(s) failed`)) : resolve(images); };
           img.onerror = () => { failed++; settled++; setGenStatus(`⚠ Could not load img${i}.png`); if (settled === TOTAL_SOURCE_IMAGES) reject(new Error(`${failed} image(s) failed`)); };
-          img.src = `png/img${i}.png`;
+          img.src = `tiff/img${i}.tif`;
           images.push(img);
         }
       });
@@ -586,24 +670,65 @@
         ctx.strokeStyle = '#000'; ctx.lineWidth = BORDER_PX;
         ctx.strokeRect(x + BORDER_PX / 2, y + BORDER_PX / 2, CELL_W - BORDER_PX, CELL_H - BORDER_PX);
       }
+      // Snap every pixel to pure black or white — matches Python's 1-bit mode
+      const id = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const v = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) > 128 ? 255 : 0;
+        d[i] = d[i + 1] = d[i + 2] = v;
+        d[i + 3] = 255;
+      }
+      ctx.putImageData(id, 0, 0);
       return canvas;
     }
 
-    async function generateChunk(pageCount, images) {
+    async function generateChunk(pageCount, images, mode) {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
-      for (let p = 0; p < pageCount; p++) {
-        if (p > 0) doc.addPage();
-        for (let side = 0; side < 2; side++) {
-          const card   = generateCard();
-          const canvas = drawCard(card, images);
-          const data   = canvas.toDataURL('image/jpeg', JPEG_Q);
-          const x      = side === 0 ? MARGIN_MM : MARGIN_MM + GRID_W_MM + GUTTER_MM;
-          doc.addImage(data, 'JPEG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
+
+      if (mode === 'portrait') {
+        // Equal gutters: solve G so cards + gutters fill both dimensions exactly.
+        // portrait letter: 215.9 × 279.4 mm
+        // card aspect = CANVAS_H / CANVAS_W
+        // card_w = (PW - 3G) / 2,  card_h = card_w * aspect
+        // 2*card_h + 3G = PH  →  G = (PH - PW*aspect) / (3*(1 - aspect))
+        const PW = 215.9, PH = 279.4;
+        const aspect = CANVAS_H / CANVAS_W;
+        const G  = (PH - PW * aspect) / (3 * (1 - aspect));
+        const gw = (PW - 3 * G) / 2;
+        const gh = gw * aspect;
+
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+        for (let p = 0; p < pageCount; p++) {
+          if (p > 0) doc.addPage();
+          for (let row = 0; row < 2; row++) {
+            for (let col = 0; col < 2; col++) {
+              const card   = generateCard();
+              const canvas = drawCard(card, images);
+              const data   = canvas.toDataURL('image/png');
+              const x = G + col * (gw + G);
+              const y = G + row * (gh + G);
+              doc.addImage(data, 'PNG', x, y, gw, gh);
+            }
+          }
+          if (p % 5 === 4) await sleep(0);
         }
-        if (p % 5 === 4) await sleep(0);
+        return doc;
+
+      } else {
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+        for (let p = 0; p < pageCount; p++) {
+          if (p > 0) doc.addPage();
+          for (let side = 0; side < 2; side++) {
+            const card   = generateCard();
+            const canvas = drawCard(card, images);
+            const data   = canvas.toDataURL('image/png');
+            const x      = side === 0 ? MARGIN_MM : MARGIN_MM + GRID_W_MM + GUTTER_MM;
+            doc.addImage(data, 'PNG', x, GRID_Y_MM, GRID_W_MM, GRID_H_MM);
+          }
+          if (p % 5 === 4) await sleep(0);
+        }
+        return doc;
       }
-      return doc;
     }
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -654,9 +779,10 @@
           const filename = `BINGO_${date}${suffix}.pdf`;
           setGenStatus(`Building batch ${i + 1} of ${numBatches}… (${pagesPerBatch} pages)`);
 
-          const doc   = await generateChunk(pagesPerBatch, loadedImages);
+          const doc   = await generateChunk(pagesPerBatch, loadedImages, layoutMode);
           const bytes = doc.output('arraybuffer');
-          batchBytes.push({ name: filename, bytes: new Uint8Array(bytes), pageCount: pagesPerBatch * 2 });
+          const cardsPerPage = layoutMode === 'portrait' ? 4 : 2;
+          batchBytes.push({ name: filename, bytes: new Uint8Array(bytes), pageCount: pagesPerBatch * cardsPerPage });
 
           document.getElementById('chunkCounter').textContent = `${i + 1}/${numBatches}`;
           setProgress(((i + 1) / numBatches) * 100);
