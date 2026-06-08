@@ -1022,4 +1022,16 @@ function setPrintMode(mode) {
       if (pdfs.length) addUploadedPDFs(pdfs);
     });
     extraInput.addEventListener('change', () => {
-      const pdfs = [...extraInput.f
+      const pdfs = [...extraInput.files].filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+      if (pdfs.length) addUploadedPDFs(pdfs);
+      extraInput.value = '';
+    });
+
+    /* ─────────────────────────────────────────────────────────
+       INIT
+    ───────────────────────────────────────────────────────── */
+    updateTotal();
+    renderQueue();
+  </script>
+</body>
+</html>
